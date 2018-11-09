@@ -129,5 +129,5 @@ function startApp(client) {
 }
 
 const port = process.env.PORT || 8080;
-const callbackUrl = process.env.CALLBACK_URL || 'http://localhost:' + port + '/auth/cb', 
+const callbackUrl = process.env.CALLBACK_URL || 'http://localhost:' + port + '/auth/cb';
 createClient().then(configurePassport).then(startApp);
