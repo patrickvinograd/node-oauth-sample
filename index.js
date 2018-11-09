@@ -16,7 +16,7 @@ function createClient() {
       client_id: process.env.VETS_API_CLIENT_ID,
       client_secret: process.env.VETS_API_CLIENT_SECRET,
       redirect_uris: [
-        'http://localhost:' + port + '/auth/cb',
+        callbackUrl,
       ],
     });
   });
@@ -129,4 +129,5 @@ function startApp(client) {
 }
 
 const port = process.env.PORT || 8080;
+const callbackUrl = process.env.CALLBACK_URL || 'http://localhost:' + port + '/auth/cb', 
 createClient().then(configurePassport).then(startApp);
