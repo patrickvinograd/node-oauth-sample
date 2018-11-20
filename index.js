@@ -35,7 +35,7 @@ function configurePassport(client) {
     {
       client,
       params: {
-        scope: 'openid profile offline_access service_history.read disability_rating.read',
+        scope: 'openid profile offline_access service_history.read disability_rating.read launch/patient patient/AllergyIntolerance.read patient/Condition.read patient/DiagnosticReport.read patient/Immunization.read patient/Medication.read patient/MedicationOrder.read patient/MedicationStatement.read patient/Observation.read patient/Patient.read patient/Procedure.read',
       },
     }, (tokenset, userinfo, done) => {
       user = Object.assign(userinfo, tokenset);
