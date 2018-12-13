@@ -6,12 +6,15 @@ const session = require('express-session');
 const request = require('request');
 
 //const ROOT_URL = 'https://deptva-eval.okta.com/';
-const ROOT_URL = 'https://deptva-eval.okta.com/oauth2/default';
+//const ROOT_URL = 'https://deptva-eval.okta.com/oauth2/default';
+const ROOT_URL = 'https://dev-api.va.gov/oauth2';
+//const ROOT_URL = 'http://localhost:7100/services/oauth2';
 const secret = "oauth_test";
 const API_URL = 'https://dev-api.va.gov'
 
 function createClient() {
-  return Issuer.discover(ROOT_URL).then(issuer => {
+  Issuer.defaultHttpOptions = { timeout: 5000 };
+  return Issuer.discover('https://dev-api.va.gov/oauth2/.well-known/openid-configuration').then(issuer => {
     return new issuer.Client({
       client_id: process.env.VETS_API_CLIENT_ID,
       client_secret: process.env.VETS_API_CLIENT_SECRET,
@@ -20,6 +23,23 @@ function createClient() {
       ],
     });
   });
+}
+
+function createClientStatic() {
+  const vaIssuer = new Issuer({
+    issuer: 'https://deptva-eval.okta.com/oauth2/default',
+    authorization_endpoint: 'https://dev-api.va.gov/services/oauth2/v1/authorize',
+    token_endpoint: 'https://dev-api.va.gov/services/oauth2/v1/token',
+    userinfo_endpoint: 'https://dev-api.va.gov/services/oauth2/v1/userinfo',
+    jwks_uri: 'https://dev-api.va.gov/services/oauth2/v1/keys',
+  });
+  return new vaIssuer.Client({
+      client_id: process.env.VETS_API_CLIENT_ID,
+      client_secret: process.env.VETS_API_CLIENT_SECRET,
+      redirect_uris: [
+        callbackUrl,
+      ],
+    });  
 }
 
 function configurePassport(client) {
@@ -69,6 +89,7 @@ function startApp(client) {
   });
   app.get('/auth', passport.authenticate('oidc'),
     function(req, res) {
+      console.log('/auth');
       console.log('req.user');
       console.log(req.user);
       req.session.user = Object.assign(req.session.user, req.user);
@@ -77,6 +98,7 @@ function startApp(client) {
     });
   app.get('/auth/cb', passport.authenticate('oidc'),
     function(req, res) {
+      console.log('/auth/cb');
       console.log('req.user');
       console.log(req.user);
       req.session.user = Object.assign(req.user);
@@ -86,12 +108,31 @@ function startApp(client) {
     }
   );
   app.get('/auth/refresh', (req, res, done) => {
+    console.log('/auth/refresh');
+    console.log('req.user');
+    console.log(req.user);
+    console.log('req.session');
+    console.log(req.session);
     client.refresh(req.session.user['refresh_token']).then(tokenset => {
       req.session.user = Object.assign(req.session.user, tokenset)
       console.log('refreshed and validated tokens', tokenset);
       console.log('req.session.user');
       console.log(req.session.user);
       res.send("Refreshed");
+      done();
+    });
+  });
+  app.get('/auth/introspect', (req, res, done) => {
+    console.log('httpOptions %j', Issuer.defaultHttpOptions);
+    console.log('/auth/introspect');
+    console.log('req.user');
+    console.log(req.user);
+    console.log('req.session');
+    console.log(req.session);
+    client.introspect(req.session.user['access_token']).then(tokendata => {
+      console.log('tokendata');
+      console.log(tokendata);
+      res.json(tokendata);
       done();
     });
   });
@@ -131,3 +172,6 @@ function startApp(client) {
 const port = process.env.PORT || 8080;
 const callbackUrl = process.env.CALLBACK_URL || 'http://localhost:' + port + '/auth/cb';
 createClient().then(configurePassport).then(startApp);
+//var client = configurePassport(createClient())
+//startApp(client);
+
