@@ -51,6 +51,14 @@ function configurePassport(client) {
   return client;
 }
 
+function requireLogin(req, res, next) {
+  if (req.session.user) {
+    return next();
+  } else {
+    res.redirect('/auth');
+  }
+}
+
 function startApp(client) {
   const app = express();
   app.set('view engine', 'hbs');
@@ -61,62 +69,88 @@ function startApp(client) {
   app.use(session({ secret: secret, saveUninitialized: true, resave: true, cookie: { maxAge: 60000 }}));
 
   app.get('/', (req, res) => {
-    res.render('index', { user: req.session.user, activeIndex: true });
+    res.render('index', { user: req.session.user, activeIndex: true, header: "Welcome" });
   });
-  app.get('/patient', async (req, res) => {
-    console.log(req.session);
+  app.get('/patient', requireLogin, async (req, res) => {
     const options = {
       url: API_URL + `/services/argonaut/v0/Patient/${req.session.user.patient}`,
       headers: { 'Authorization': 'Bearer ' + req.session.user['access_token'] }
     };
     const response = await request(options);
-    res.render('patient', { patient: response, activePatient: true });
+    res.render('patient', { patient: response, activePatient: true, user: req.session.user, header: 'Patient Information' });
+  });
+  [
+    {
+      path: '/conditions',
+      endpoint: '/Condition?patient=',
+      header: 'My Conditions',
+      active: 'Conditions',
+    },
+    {
+      path: '/allergy_intolerances',
+      endpoint: '/AllergyIntolerance?patient=',
+      header: 'My Allergy Intolerance',
+      active: 'Allergies',
+    },
+    {
+      path: '/medication_orders',
+      endpoint: '/MedicationOrder?patient=',
+      header: 'My Medication Orders',
+      active: 'MedOrders',
+    },
+    {
+      path: '/medication_statements',
+      endpoint: '/MedicationStatement?patient=',
+      header: 'My Medication Statements',
+      active: 'MedStatements',
+    },
+    {
+      path: '/observations',
+      endpoint: '/Observation?patient=',
+      header: 'My Observations',
+      active: 'Observations',
+    },
+    {
+      path: '/immunizations',
+      endpoint: '/Immunization?patient=',
+      header: 'My Immunizations',
+      active: 'Immunizations',
+    },
+  ].forEach(({path, endpoint, header, active}) => {
+    app.get(path, requireLogin, async (req, res, done) => {
+      const options = {
+        url: API_URL + `/services/argonaut/v0${endpoint}${req.session.user.patient}`,
+        headers: { 'Authorization': 'Bearer ' + req.session.user['access_token'] }
+      };
+      try {
+      const response = await request(options);
+      const locals = { patient: response, user: req.session.user, header };
+      locals[`active${active}`] = true;
+        res.render('patient', locals);
+      } catch (error) {
+        return done(error);
+      }
+    });
   });
   app.get('/auth', passport.authenticate('oidc'),
-    function(req, res) {
-      console.log('/auth');
-      console.log('req.user');
-      console.log(req.user);
-      req.session.user = Object.assign(req.session.user, req.user);
-      console.log('req.session.user');
-      console.log(req.session.user);
-    });
+          function(req, res) {
+            req.session.user = Object.assign(req.session.user, req.user);
+          });
   app.get('/auth/cb', passport.authenticate('oidc'),
-    function(req, res) {
-      console.log('/auth/cb');
-      console.log('req.user');
-      console.log(req.user);
-      req.session.user = Object.assign(req.user);
-      console.log('req.session.user');
-      console.log(req.session.user);
-      res.redirect('/');
-    }
-  );
+          function(req, res) {
+            req.session.user = Object.assign(req.user);
+            res.redirect('/');
+          }
+         );
   app.get('/auth/refresh', (req, res, done) => {
-    console.log('/auth/refresh');
-    console.log('req.user');
-    console.log(req.user);
-    console.log('req.session');
-    console.log(req.session);
     client.refresh(req.session.user['refresh_token']).then(tokenset => {
       req.session.user = Object.assign(req.session.user, tokenset)
-      console.log('refreshed and validated tokens', tokenset);
-      console.log('req.session.user');
-      console.log(req.session.user);
       res.send("Refreshed");
       done();
     });
   });
   app.get('/auth/introspect', (req, res, done) => {
-    console.log('httpOptions %j', Issuer.defaultHttpOptions);
-    console.log('/auth/introspect');
-    console.log('req.user');
-    console.log(req.user);
-    console.log('req.session');
-    console.log(req.session);
     client.introspect(req.session.user['access_token']).then(tokendata => {
-      console.log('tokendata');
-      console.log(tokendata);
       res.json(tokendata);
       done();
     });
