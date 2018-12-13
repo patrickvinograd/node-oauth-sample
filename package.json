@@ -20,8 +20,10 @@
   "dependencies": {
     "express": "^4.16.4",
     "express-session": "^1.15.6",
+    "hbs": "^4.0.1",
     "openid-client": "^2.4.5",
     "passport": "^0.4.0",
-    "request": "^2.88.0"
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.5"
   }
 }

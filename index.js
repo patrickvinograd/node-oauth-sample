@@ -3,7 +3,8 @@ const { Issuer, Strategy } = require('openid-client');
 const passport = require('passport');
 const process = require('process');
 const session = require('express-session');
-const request = require('request');
+const request = require('request-promise-native');
+const hbs = require('hbs');
 
 //const ROOT_URL = 'https://deptva-eval.okta.com/';
 //const ROOT_URL = 'https://deptva-eval.okta.com/oauth2/default';
@@ -23,23 +24,6 @@ function createClient() {
       ],
     });
   });
-}
-
-function createClientStatic() {
-  const vaIssuer = new Issuer({
-    issuer: 'https://deptva-eval.okta.com/oauth2/default',
-    authorization_endpoint: 'https://dev-api.va.gov/services/oauth2/v1/authorize',
-    token_endpoint: 'https://dev-api.va.gov/services/oauth2/v1/token',
-    userinfo_endpoint: 'https://dev-api.va.gov/services/oauth2/v1/userinfo',
-    jwks_uri: 'https://dev-api.va.gov/services/oauth2/v1/keys',
-  });
-  return new vaIssuer.Client({
-      client_id: process.env.VETS_API_CLIENT_ID,
-      client_secret: process.env.VETS_API_CLIENT_SECRET,
-      redirect_uris: [
-        callbackUrl,
-      ],
-    });  
 }
 
 function configurePassport(client) {
@@ -69,23 +53,24 @@ function configurePassport(client) {
 
 function startApp(client) {
   const app = express();
+  app.set('view engine', 'hbs');
+  app.set('view options', { layout: 'layout' });
+  app.engine('handlebars', hbs.__express);
   app.use(passport.initialize());
   app.use(passport.session());
   app.use(session({ secret: secret, saveUninitialized: true, resave: true, cookie: { maxAge: 60000 }}));
-/*
-  app.use(function (req, res, next) {
-    if (!req.session.user) {
-      req.session.user = {}
-    }
-   });
-*/
+
   app.get('/', (req, res) => {
-    if (req.session.user && req.session.user['given_name']) {
-      res.send('Hello ' + req.session.user['given_name']);
-    }
-    else {
-      res.send('Hello World!');
-    }
+    res.render('index', { user: req.session.user, activeIndex: true });
+  });
+  app.get('/patient', async (req, res) => {
+    console.log(req.session);
+    const options = {
+      url: API_URL + `/services/argonaut/v0/Patient/${req.session.user.patient}`,
+      headers: { 'Authorization': 'Bearer ' + req.session.user['access_token'] }
+    };
+    const response = await request(options);
+    res.render('patient', { patient: response, activePatient: true });
   });
   app.get('/auth', passport.authenticate('oidc'),
     function(req, res) {
@@ -140,32 +125,6 @@ function startApp(client) {
     req.session.destroy();
     done();
   });
-  app.get('/api/sh', (req, res, done) => {
-    options = {
-      url: API_URL + '/services/veteran_verification/v0/service_history',
-      headers: { 'Authorization': 'Bearer ' + req.session.user['access_token'] }
-    };
-    request(options, function (error, response, body) {
-          console.log('error:', error); // Print the error if one occurred and handle it
-          console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
-          res.send(body);
-          done();
-    });
-  });
-  app.get('/api/dr', (req, res, done) => {
-    options = {
-      url: API_URL + '/services/veteran_verification/v0/disability_rating',
-      headers: { 'Authorization': 'Bearer ' + req.session.user['access_token'] }
-    };
-    request(options, function (error, response, body) {
-          console.log('error:', error); // Print the error if one occurred and handle it
-          console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
-          res.send(body);
-          done();
-    });
-  });
-
-
   app.listen(port, () => console.log(`Example app listening on port ${port}!`));
 }
 
