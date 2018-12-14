@@ -66,7 +66,7 @@ function startApp(client) {
   app.engine('handlebars', hbs.__express);
   app.use(passport.initialize());
   app.use(passport.session());
-  app.use(session({ secret: secret, saveUninitialized: true, resave: true, cookie: { maxAge: 60000, sameSite: false }}));
+  app.use(session({ secret: secret, saveUninitialized: true, resave: true, cookie: { maxAge: 60000 }}));
 
   app.get('/', (req, res) => {
     res.render('index', { user: req.session.user, activeIndex: true, header: "Welcome" });
