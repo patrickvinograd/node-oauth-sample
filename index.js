@@ -157,6 +157,7 @@ function startApp(client) {
   });
   app.get('/logout', (req, res, done) => {
     req.session.destroy();
+    res.redirect('/');
     done();
   });
   app.listen(port, () => console.log(`Example app listening on port ${port}!`));
