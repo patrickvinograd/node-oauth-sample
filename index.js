@@ -76,8 +76,12 @@ function startApp(client) {
       url: API_URL + `/services/argonaut/v0/Patient/${req.session.user.patient}`,
       headers: { 'Authorization': 'Bearer ' + req.session.user['access_token'] }
     };
+    try {
     const response = await request(options);
     res.render('patient', { patient: response, activePatient: true, user: req.session.user, header: 'Patient Information' });
+    } catch (error) {
+      res.render('error', { error: error, user: req.session.user, header: "Error" });
+    }
   });
   [
     {
@@ -128,7 +132,7 @@ function startApp(client) {
       locals[`active${active}`] = true;
         res.render('patient', locals);
       } catch (error) {
-        return done(error);
+        res.render('error', { error: error, user: req.session.user, header: "Error" });
       }
     });
   });
