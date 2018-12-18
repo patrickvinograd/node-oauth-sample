@@ -6,16 +6,16 @@ const session = require('express-session');
 const request = require('request-promise-native');
 const hbs = require('hbs');
 
-//const ROOT_URL = 'https://deptva-eval.okta.com/';
-//const ROOT_URL = 'https://deptva-eval.okta.com/oauth2/default';
-const ROOT_URL = 'https://dev-api.va.gov/oauth2';
-//const ROOT_URL = 'http://localhost:7100/services/oauth2';
+//const OAUTH_URL = 'https://deptva-eval.okta.com/';
+//const OAUTH_URL = 'https://deptva-eval.okta.com/oauth2/default';
+//const OAUTH_URL = 'http://localhost:7100/services/oauth2';
+const OAUTH_URL = process.env.OAUTH_URL || 'https://dev-api.va.gov/oauth2';
 const secret = "oauth_test";
-const API_URL = 'https://dev-api.va.gov'
+const API_URL = process.env.API_URL || 'https://dev-api.va.gov'
 
 function createClient() {
   Issuer.defaultHttpOptions = { timeout: 5000 };
-  return Issuer.discover('https://dev-api.va.gov/oauth2/.well-known/openid-configuration').then(issuer => {
+  return Issuer.discover(OAUTH_URL + '/.well-known/openid-configuration').then(issuer => {
     return new issuer.Client({
       client_id: process.env.VETS_API_CLIENT_ID,
       client_secret: process.env.VETS_API_CLIENT_SECRET,
