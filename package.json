@@ -24,6 +24,7 @@
     "openid-client": "^2.4.5",
     "passport": "^0.4.0",
     "request": "^2.88.0",
-    "request-promise-native": "^1.0.5"
+    "request-promise-native": "^1.0.5",
+    "sha.js": "^2.4.11"
   }
 }
