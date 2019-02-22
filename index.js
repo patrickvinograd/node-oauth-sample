@@ -5,6 +5,7 @@ const process = require('process');
 const session = require('express-session');
 const request = require('request-promise-native');
 const hbs = require('hbs');
+const shajs = require('sha.js');
 
 //const OAUTH_URL = 'https://deptva-eval.okta.com/';
 //const OAUTH_URL = 'https://deptva-eval.okta.com/oauth2/default';
@@ -43,7 +44,14 @@ function configurePassport(client) {
       },
     }, (tokenset, userinfo, done) => {
       user = Object.assign(userinfo, tokenset);
-      console.log('user', user);
+      if (process.env.VERBOSE === 'true') {
+        console.log('user', user);
+      }
+      else {
+        console.log('user.sub', user.sub);
+        console.log('user.name', user.name);
+        console.log('access_token digest', new shajs.sha256().update(access_token).digest('hex'));
+      }
       done(null, user);
     }
   ));
