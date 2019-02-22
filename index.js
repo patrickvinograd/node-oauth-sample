@@ -16,7 +16,7 @@ const API_URL = process.env.API_URL || 'https://dev-api.va.gov'
 
 function createClient() {
   Issuer.defaultHttpOptions = { timeout: 5000 };
- const fhirIssuer = new Issuer({
+  const fhirIssuer = new Issuer({
     issuer: 'https://va.okta.com/oauth2/default',
     authorization_endpoint: 'https://argonaut.lighthouse.va.gov/authorize',
     token_endpoint: 'https://argonaut.lighthouse.va.gov/token',
@@ -55,7 +55,7 @@ function configurePassport(client) {
       else {
         console.log('user.sub', user.sub);
         console.log('user.name', user.name);
-        console.log('access_token digest', new shajs.sha256().update(access_token).digest('hex'));
+        console.log('access_token digest', new shajs.sha256().update(user.access_token).digest('hex'));
       }
       done(null, user);
     }
@@ -182,7 +182,10 @@ function startApp(client) {
 
 const port = process.env.PORT || 8080;
 const callbackUrl = process.env.CALLBACK_URL || 'http://localhost:' + port + '/auth/cb';
-createClient().then(configurePassport).then(startApp);
+const client = createClient();
+configurePassport(client);
+startApp(client);
+//createClient().then(configurePassport).then(startApp);
 //var client = configurePassport(createClient())
 //startApp(client);
 
