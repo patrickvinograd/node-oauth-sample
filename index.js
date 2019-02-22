@@ -16,14 +16,19 @@ const API_URL = process.env.API_URL || 'https://dev-api.va.gov'
 
 function createClient() {
   Issuer.defaultHttpOptions = { timeout: 5000 };
-  return Issuer.discover(OAUTH_URL + '/.well-known/openid-configuration').then(issuer => {
-    return new issuer.Client({
-      client_id: process.env.VETS_API_CLIENT_ID,
-      client_secret: process.env.VETS_API_CLIENT_SECRET,
-      redirect_uris: [
-        callbackUrl,
-      ],
-    });
+ const fhirIssuer = new Issuer({
+    issuer: 'https://va.okta.com/oauth2/default',
+    authorization_endpoint: 'https://argonaut.lighthouse.va.gov/authorize',
+    token_endpoint: 'https://argonaut.lighthouse.va.gov/token',
+    userinfo_endpoint: 'https://api.va.gov/oauth2/userinfo',
+    jwks_uri: 'https://api.va.gov/oauth2/keys',
+  });
+  return new fhirIssuer.Client({
+    client_id: process.env.VETS_API_CLIENT_ID,
+    client_secret: process.env.VETS_API_CLIENT_SECRET,
+    redirect_uris: [
+      callbackUrl,
+    ],
   });
 }
 
